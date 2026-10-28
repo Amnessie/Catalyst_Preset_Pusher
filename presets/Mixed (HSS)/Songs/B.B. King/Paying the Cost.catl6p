@@ -1,0 +1,109 @@
+{
+ "data": {
+  "device": 2424833,
+  "device_version": 0,
+  "meta": {
+   "application": "Catalyst Edit",
+   "appversion": 1,
+   "author": "Catalyst Preset Picker",
+   "modifieddate": 1793196202,
+   "name": "Paying the Cost",
+   "tnid": 0
+  },
+  "tone": {
+   "CatalystGroupAmp": {
+    "@asset": "Clean",
+    "BoostEnable": false,
+    "Boost": 90,
+    "graphSlot_EnabledState": true,
+    "Gain": 128,
+    "Bass": 115,
+    "Mid": 153,
+    "Treble": 166,
+    "Presence": 140,
+    "ChannelVolume": 121,
+    "HumEnable": false,
+    "Sag": 128,
+    "Bias": 128,
+    "BiasX": 128
+   },
+   "CatalystGroupDirectOut": {
+    "@asset": "DirectOut",
+    "CabinetIndex": 0,
+    "MicIndex": 0
+   },
+   "CatalystGroupEffect": {
+    "@asset": "SimpleDelay",
+    "Feedback": 89,
+    "Level": 231,
+    "graphSlot_WetDryState": 127,
+    "graphSlot_PostState": true,
+    "graphSlot_EnabledState": false,
+    "graphSlotAsset_ManualTime": 600,
+    "graphSlotAsset_TempoSyncSubDivision": 5,
+    "graphSlotAsset_TempoSyncActive": false
+   },
+   "CatalystGroupGate": {
+    "@asset": "NoiseGate",
+    "Decay": 64,
+    "Threshold": 128,
+    "graphSlot_EnabledState": false
+   },
+   "CatalystGroupReverb": {
+    "@asset": "Chamber",
+    "Decay": 77,
+    "Predelay": 28,
+    "Level": 231,
+    "LowCut": 143,
+    "HiCut": 4700,
+    "graphSlot_WetDryState": 51,
+    "graphSlot_PostState": true,
+    "graphSlot_EnabledState": true
+   },
+   "global": {
+    "Tempo": 1200,
+    "cabMicEnable": true,
+    "volumePedalPost": false,
+    "expressionPedalAssignment1_AssignmentIndex": 0,
+    "expressionPedalAssignment1_Enable": false,
+    "expressionPedalAssignment1_Max": 255,
+    "expressionPedalAssignment1_Min": 0,
+    "expressionPedalAssignment2_AssignmentIndex": 0,
+    "expressionPedalAssignment2_Enable": false,
+    "expressionPedalAssignment2_Max": 255,
+    "expressionPedalAssignment2_Min": 0,
+    "expressionPedalAssignment3_AssignmentIndex": 0,
+    "expressionPedalAssignment3_Enable": false,
+    "expressionPedalAssignment3_Max": 255,
+    "expressionPedalAssignment3_Min": 0,
+    "expressionPedalAssignment4_AssignmentIndex": 0,
+    "expressionPedalAssignment4_Enable": false,
+    "expressionPedalAssignment4_Max": 255,
+    "expressionPedalAssignment4_Min": 0,
+    "expressionPedalAssignment5_AssignmentIndex": 0,
+    "expressionPedalAssignment5_Enable": false,
+    "expressionPedalAssignment5_Max": 255,
+    "expressionPedalAssignment5_Min": 0,
+    "expressionPedalAssignment6_AssignmentIndex": 0,
+    "expressionPedalAssignment6_Enable": false,
+    "expressionPedalAssignment6_Max": 255,
+    "expressionPedalAssignment6_Min": 0,
+    "expressionPedalAssignment7_AssignmentIndex": 0,
+    "expressionPedalAssignment7_Enable": false,
+    "expressionPedalAssignment7_Max": 255,
+    "expressionPedalAssignment7_Min": 0,
+    "expressionPedalAssignment8_AssignmentIndex": 0,
+    "expressionPedalAssignment8_Enable": false,
+    "expressionPedalAssignment8_Max": 255,
+    "expressionPedalAssignment8_Min": 0
+   }
+  }
+ },
+ "meta": {
+  "original": 0,
+  "pbn": 0,
+  "premium": 0
+ },
+ "schema": "L6Preset",
+ "version": 5
+}

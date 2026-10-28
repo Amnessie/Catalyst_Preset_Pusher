@@ -1,0 +1,1085 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catalyst Preset Picker</title>
+<style>
+  :root {
+    --bg: #f4f1ec;
+    --panel: #ffffff;
+    --ink: #1d1b18;
+    --muted: #6b655c;
+    --line: #e2ddd4;
+    --accent: #c2410c;
+    --accent-ink: #ffffff;
+    --chip: #ece7df;
+    --knob: #2b2925;
+    --ok: #15803d;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151413; --panel: #1f1d1b; --ink: #f1ede6; --muted: #a39d93; --line: #34312d;
+      --accent: #f97316; --accent-ink: #1a0f06; --chip: #2b2825; --knob: #e9e4dc; --ok: #4ade80;
+      --shadow: 0 1px 2px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151413; --panel: #1f1d1b; --ink: #f1ede6; --muted: #a39d93; --line: #34312d;
+    --accent: #f97316; --accent-ink: #1a0f06; --chip: #2b2825; --knob: #e9e4dc; --ok: #4ade80;
+    --shadow: 0 1px 2px rgba(0,0,0,.4);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  header {
+    display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between;
+    padding: 18px 24px; border-bottom: 1px solid var(--line); background: var(--panel);
+  }
+  h1 { font-size: 20px; margin: 0; letter-spacing: -.01em; }
+  h1 small { display: block; font-size: 13px; font-weight: 400; color: var(--muted); }
+  .settings { display: flex; flex-wrap: wrap; gap: 12px; }
+  label.field { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 3px; }
+  select, input[type=text], input[type=search] {
+    font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 8px; padding: 6px 10px;
+  }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 16px 24px 0; }
+  .toolbar input[type=search] { flex: 1 1 220px; max-width: 320px; }
+  .chip {
+    border: 1px solid var(--line); background: var(--chip); color: var(--ink); border-radius: 999px;
+    padding: 5px 12px; font: inherit; font-size: 13px; cursor: pointer;
+  }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 20px; padding: 16px 24px 110px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; align-content: start; }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px;
+    box-shadow: var(--shadow); cursor: pointer; display: flex; flex-direction: column; gap: 8px;
+    text-align: left; font: inherit; color: inherit;
+  }
+  .card:hover { border-color: var(--muted); }
+  .card.active { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .card h3 { margin: 0; font-size: 16px; }
+  .tag { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+  .desc { margin: 0; font-size: 13px; color: var(--muted); }
+  .knobrow { display: flex; gap: 10px; font-size: 12px; font-variant-numeric: tabular-nums; flex-wrap: wrap; }
+  .knobrow span b { font-weight: 600; }
+  .fxline { font-size: 12px; color: var(--muted); }
+  .card-actions { display: flex; justify-content: space-between; align-items: center; margin-top: auto; }
+  .edited { font-size: 11px; color: var(--accent); }
+  button.btn {
+    font: inherit; font-size: 13px; border-radius: 8px; padding: 6px 12px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--panel); color: var(--ink);
+  }
+  button.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  button.btn.inbank { background: var(--ok); border-color: var(--ok); color: var(--panel); }
+  button.btn:disabled { opacity: .5; cursor: default; }
+  aside {
+    position: sticky; top: 16px; align-self: start; background: var(--panel); border: 1px solid var(--line);
+    border-radius: 12px; padding: 18px; box-shadow: var(--shadow); max-height: calc(100vh - 32px); overflow: auto;
+  }
+  aside h2 { margin: 0 0 4px; font-size: 18px; }
+  aside h4 { margin: 18px 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .slider { display: grid; grid-template-columns: 78px 1fr 34px; align-items: center; gap: 8px; font-size: 13px; }
+  .slider input { width: 100%; accent-color: var(--accent); }
+  .slider output { text-align: right; font-variant-numeric: tabular-nums; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 6px 0; font-size: 13px; }
+  .row select { flex: 1; }
+  .row select#e-slot { flex: 0 0 auto; }
+  .hand {
+    margin-top: 16px; padding: 10px 12px; background: var(--chip); border-radius: 8px; font-size: 13px;
+  }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  .fixrow { display: grid; grid-template-columns: 46px 1fr; gap: 8px; align-items: baseline; margin: 6px 0; }
+  .fixrow > span { font-size: 12px; color: var(--muted); }
+  .fixrow div { display: flex; flex-wrap: wrap; gap: 5px; }
+  .fixrow .chip { font-size: 12px; padding: 4px 10px; }
+  .fixnote { margin: 8px 0 0; font-size: 12px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .fixnote .btn { padding: 2px 10px; font-size: 12px; }
+  .empty { color: var(--muted); }
+  .bankbar {
+    position: fixed; left: 0; right: 0; bottom: 0; background: var(--panel); border-top: 1px solid var(--line);
+    padding: 12px 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  }
+  .bankbar .slots { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; font-size: 12px; }
+  .slot { background: var(--chip); border-radius: 6px; padding: 3px 8px; }
+  .slot b { color: var(--muted); font-weight: 500; margin-right: 4px; }
+  .note { font-size: 12px; color: var(--muted); }
+  .status { font-size: 12px; color: var(--muted); align-self: flex-end; padding-bottom: 7px; }
+  .status::before { content: "●"; margin-right: 5px; color: var(--muted); }
+  .status.on::before { color: var(--ok); }
+  .status.off::before { color: var(--accent); }
+  .card-actions .btns { display: flex; gap: 6px; }
+  .toolbar-actions { display: flex; gap: 8px; margin-left: auto; }
+  .chip .count { font-size: 11px; opacity: .7; }
+  #artists { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 6px; }
+  #artists .chip { font-size: 12px; padding: 4px 10px; }
+  .song { margin: 0 0 4px; font-size: 12px; font-weight: 600; }
+  .star {
+    border: 0; background: none; color: var(--muted); font-size: 20px; line-height: 1; cursor: pointer;
+    padding: 0 2px; margin-left: 4px;
+  }
+  .star[aria-pressed="true"] { color: #eab308; }
+  .card-top .tag { margin-left: auto; }
+  [hidden] { display: none !important; }
+  .toast {
+    position: fixed; left: 50%; bottom: 76px; transform: translateX(-50%); max-width: min(520px, calc(100% - 32px));
+    background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 10px; font-size: 14px;
+    box-shadow: var(--shadow); opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .toast.show { opacity: 1; }
+  .toast.error { background: var(--accent); color: var(--accent-ink); }
+  .dropzone {
+    position: fixed; inset: 0; display: grid; place-items: center; padding: 16px;
+    background: color-mix(in srgb, var(--bg) 85%, transparent); pointer-events: none; z-index: 10;
+  }
+  .dropzone div {
+    border: 3px dashed var(--accent); border-radius: 16px; padding: 40px 32px; background: var(--panel);
+    font-size: 18px; font-weight: 600; text-align: center;
+  }
+  @media (max-width: 860px) {
+    main { grid-template-columns: 1fr; padding: 16px 16px 140px; }
+    aside { position: static; max-height: none; }
+    header, .toolbar, .bankbar { padding-left: 16px; padding-right: 16px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Catalyst Preset Picker<small>Pick a sound, tweak it, download it, load it with Catalyst Edit (Ctrl+O).
+    Not made by or affiliated with Line 6.</small></h1>
+  <div class="settings">
+    <label class="field">Amp
+      <select id="device">
+        <option value="2424833">Catalyst 60</option>
+        <option value="2424834">Catalyst 100</option>
+        <option value="2424835">Catalyst 200</option>
+      </select>
+    </label>
+    <label class="field">Your pickups
+      <select id="pickups">
+        <option value="neutral">Not sure / mixed (HSS)</option>
+        <option value="single">Single coils (Strat, Tele)</option>
+        <option value="humbucker">Humbuckers (Les Paul, SG)</option>
+      </select>
+    </label>
+    <label class="field">Overall level
+      <select id="level">
+        <option value="-2">Much quieter (−2)</option>
+        <option value="-1">Quieter (−1)</option>
+        <option value="-0.5">A bit quieter (−0.5)</option>
+        <option value="0">As designed</option>
+        <option value="0.5">A bit louder (+0.5)</option>
+        <option value="1">Louder (+1)</option>
+      </select>
+    </label>
+    <span class="status" id="status" hidden></span>
+  </div>
+</header>
+
+<div class="toolbar">
+  <input type="search" id="search" placeholder="Search sounds, artists, styles…" aria-label="Search">
+  <div id="cats" role="group" aria-label="Category"></div>
+  <div id="artists" role="group" aria-label="Artist" hidden></div>
+  <span class="toolbar-actions">
+    <button class="btn" id="importbtn" title="Add .catl6p files or a zip of them (from Catalyst Edit or a friend) to My sounds. You can also drag them onto this page.">Import presets</button>
+    <button class="btn" id="exportmine" hidden>Export my sounds (.zip)</button>
+    <input type="file" id="importfile" accept=".catl6p,.json,.zip" multiple hidden>
+  </span>
+</div>
+
+<main>
+  <section class="grid" id="grid" aria-label="Sounds"></section>
+  <aside id="editor"><p class="empty">Click a sound to see its settings and tweak it.</p></aside>
+</main>
+
+<div class="bankbar">
+  <strong id="bankcount">Bank: 0 / 12</strong>
+  <div class="slots" id="slots"><span class="note">Add up to 12 sounds (6 banks × 2 channels) and download them together.</span></div>
+  <button class="btn" id="clearbank">Clear</button>
+  <button class="btn primary" id="downloadbank" disabled>Download bank (.zip)</button>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="dropzone" id="dropzone" hidden><div>Drop .catl6p files or a zip to add them to My sounds</div></div>
+
+<script src="models.js"></script>
+<script src="presets.js"></script>
+<script>
+"use strict";
+const M = window.CATALYST_MODELS;
+const LIB = window.PRESET_LIBRARY;
+const ARTISTS = [...new Set(LIB.map((p) => p.artist).filter(Boolean))];
+const ARTIST_ALSO = window.ARTIST_ALSO || {};
+const FAV = "★ Favorites", MINE = "My sounds";
+const SONGS = "Songs";
+const CATS = ["All", FAV, MINE, SONGS, "Clean", "Fingerstyle", "Blues", "Rock", "Metal", "Ambient"];
+const AMP_KNOBS = [["gain", "Gain"], ["bass", "Bass"], ["mid", "Mid"], ["treble", "Treble"], ["presence", "Presence"], ["volume", "Volume"]];
+const ALIASES = { mix: "graphSlot_WetDryState", time: "graphSlotAsset_ManualTime", fb: "Feedback", post: "graphSlot_PostState" };
+const PICKUP_ADJUST = {
+  neutral: { gain: 0, treble: 0, bass: 0 },
+  single: { gain: 0.5, treble: -0.3, bass: 0.3 },
+  humbucker: { gain: -0.5, treble: 0.4, bass: -0.3 },
+};
+// One-click fixes for what you hear. Each nudges knobs by the given amount (0-10 scale);
+// revmix and fxmix are the reverb and effect mix.
+const QUICK_FIXES = [
+  ["Tone", [
+    ["bright", "Too bright", { treble: -1, presence: -1 }],
+    ["dark", "Too dark", { treble: 1, presence: 1 }],
+    ["muddy", "Too muddy", { bass: -1, mid: -0.5 }],
+    ["thin", "Too thin", { bass: 1, mid: 0.5 }],
+    ["fizzy", "Too fizzy", { presence: -1.5, treble: -0.5 }],
+    ["bite", "Needs bite", { mid: 1, presence: 0.5 }],
+  ]],
+  ["Drive", [
+    ["gainup", "More gain", { gain: 1 }],
+    ["gaindown", "Less gain", { gain: -1 }],
+    ["sustain", "More sustain", { gain: 0.5, mid: 0.5 }],
+    ["noisy", "Too noisy", { gate: 1 }],
+  ]],
+  ["Level", [
+    ["quiet", "Too quiet", { volume: 1 }],
+    ["loud", "Too loud", { volume: -1 }],
+  ]],
+  ["Space", [
+    ["space", "More space", { revmix: 1 }],
+    ["wet", "Too wet", { revmix: -1, fxmix: -1 }],
+  ]],
+];
+const FIX_BY_KEY = Object.fromEntries(QUICK_FIXES.flatMap(([, fixes]) => fixes.map(([key, label, deltas]) => [key, { label, deltas }])));
+const FIX_KNOB_NAMES = { gain: "Gain", bass: "Bass", mid: "Mid", treble: "Treble", presence: "Presence", volume: "Volume",
+  gate: "Noise gate", revmix: "Reverb", fxmix: "Effect mix" };
+const MAX_NAME = 16;
+const BANK_SIZE = 12;
+const SLOTS = ["1A", "1B", "2A", "2B", "3A", "3B", "4A", "4B", "5A", "5B", "6A", "6B"];
+
+// ---------- persisted per-viewer state ----------
+function load(key, fallback) {
+  try { const v = localStorage.getItem("cpp." + key); return v ? JSON.parse(v) : fallback; } catch { return fallback; }
+}
+function save(key, value) {
+  try { localStorage.setItem("cpp." + key, JSON.stringify(value)); } catch { /* storage unavailable */ }
+}
+const libId = (p) => "lib:" + p.name;
+const state = {
+  edits: load("edits", {}),      // sound id -> edited copy of a library sound
+  bank: load("bank", []),        // sound ids, in slot order
+  favs: load("favs", []),        // sound ids
+  mine: load("mine", []),        // the user's own sounds, each with an "id"
+  cat: "All",
+  artist: "",                    // filters Songs; "" = every artist
+  query: "",
+  selected: null,
+  device: load("device", "2424833"),
+  pickups: load("pickups", "neutral"),
+  level: load("level", 0),       // added to every sound's volume knob
+  helper: false,                 // true when opened through helper.py, which can load into Catalyst Edit
+  catalystOpen: false,
+  loading: false,
+  onAmp: null,                   // the sound last loaded or saved through the helper
+  slot: SLOTS.includes(load("slot", "")) ? load("slot", "") : "1A",
+  autosend: load("autosend", true), // send each quick fix to the amp
+  undo: [],                      // { id, before } per quick fix; before is null when the sound had no edits
+  lastFix: null,                 // { id, text } shown under the quick fix buttons
+};
+
+// Older versions keyed edits and the bank by list position; move them to ids.
+const fromIndex = (k) => (/^\d+$/.test(String(k)) && LIB[k] ? libId(LIB[k]) : k);
+state.edits = Object.fromEntries(Object.entries(state.edits).map(([k, v]) => [fromIndex(k), v]));
+state.bank = state.bank.map(fromIndex);
+
+const clone = (o) => JSON.parse(JSON.stringify(o));
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const knobToRaw = (v) => Math.round(clamp(v, 0, 10) * 25.5);
+const rawToKnob = (v) => Math.round(clamp(v / 25.5, 0, 10) * 10) / 10;
+const fmt = (v) => (Math.round(v * 10) / 10).toString();
+
+const isMine = (id) => String(id).startsWith("my:");
+const findMine = (id) => state.mine.find((p) => p.id === id);
+const findLib = (id) => LIB.find((p) => libId(p) === id);
+function current(id) {
+  if (isMine(id)) return findMine(id);
+  return state.edits[id] || findLib(id);
+}
+function allIds() {
+  return [...state.mine.map((p) => p.id), ...LIB.map(libId)];
+}
+
+// ---------- preset building ----------
+function modelDefaults(model) {
+  const out = {};
+  for (const [sym, spec] of Object.entries(model.params)) {
+    out[sym] = sym.endsWith("_PostState") ? Boolean(spec.default) : spec.default;
+  }
+  return out;
+}
+
+// Applies { key: value } settings to a model's params using the 0-10 rule for 0-255 params.
+function applySettings(target, model, settings) {
+  for (const [key, value] of Object.entries(settings)) {
+    if (key === "type") continue;
+    const sym = ALIASES[key] || key;
+    const spec = model.params[sym];
+    if (!spec) { console.warn("Unknown parameter", sym, "for", model.name); continue; }
+    if (typeof value === "boolean") target[sym] = value;
+    else if (spec.min === 0 && spec.max === 255) target[sym] = knobToRaw(value);
+    else target[sym] = Math.round(clamp(value, spec.min, spec.max));
+  }
+}
+
+function buildSlot(groupName, settings, fallbackType) {
+  const group = M[groupName];
+  const known = settings && Object.hasOwn(group, settings.type);
+  const type = known ? settings.type : fallbackType;
+  const model = group[type];
+  const slot = { "@asset": type, ...modelDefaults(model) };
+  if ("graphSlotAsset_TempoSyncActive" in slot) slot.graphSlotAsset_TempoSyncActive = false;
+  if (known) applySettings(slot, model, settings);
+  slot.graphSlot_EnabledState = Boolean(known);
+  return slot;
+}
+
+// The pickup and overall-level settings are applied when a sound goes to the amp. "raw" skips
+// them, for exports that someone else will import and adjust for their own guitar.
+function adjustedKnobs(p, raw) {
+  const adj = (!raw && PICKUP_ADJUST[state.pickups]) || PICKUP_ADJUST.neutral;
+  const k = {};
+  for (const [key] of AMP_KNOBS) k[key] = clamp((p[key] ?? 5) + (adj[key] || 0), 0, 10);
+  if (!raw) k.volume = clamp(k.volume + Number(state.level || 0), 0, 10);
+  return k;
+}
+
+function buildPreset(p, raw) {
+  const amp = Object.hasOwn(M.amps, p.amp) ? p.amp : "Clean";
+  const k = adjustedKnobs(p, raw);
+  const ampSlot = {
+    "@asset": amp,
+    ...modelDefaults(M.amps[amp]),
+    Gain: knobToRaw(k.gain), Bass: knobToRaw(k.bass), Mid: knobToRaw(k.mid),
+    Treble: knobToRaw(k.treble), Presence: knobToRaw(k.presence), ChannelVolume: knobToRaw(k.volume),
+    BoostEnable: Boolean(p.boost), HumEnable: false, graphSlot_EnabledState: true,
+  };
+  const gate = p.gate || 0;
+  const global = { Tempo: 1200, cabMicEnable: true, volumePedalPost: false };
+  for (let n = 1; n <= 8; n++) {
+    global[`expressionPedalAssignment${n}_AssignmentIndex`] = 0;
+    global[`expressionPedalAssignment${n}_Enable`] = false;
+    global[`expressionPedalAssignment${n}_Max`] = 255;
+    global[`expressionPedalAssignment${n}_Min`] = 0;
+  }
+  return {
+    data: {
+      device: Number(state.device),
+      device_version: 0,
+      meta: {
+        application: "Catalyst Edit", appversion: 1, author: "Catalyst Preset Picker",
+        modifieddate: Math.floor(Date.now() / 1000), name: p.name.slice(0, MAX_NAME), tnid: 0,
+      },
+      tone: {
+        CatalystGroupAmp: ampSlot,
+        CatalystGroupDirectOut: { "@asset": "DirectOut", CabinetIndex: 0, MicIndex: p.mic || 0 },
+        CatalystGroupEffect: buildSlot("effects", p.fx, "SimpleDelay"),
+        CatalystGroupGate: {
+          "@asset": "NoiseGate", Decay: 64,
+          Threshold: gate > 0 ? knobToRaw(gate) : 128, graphSlot_EnabledState: gate > 0,
+        },
+        CatalystGroupReverb: buildSlot("reverbs", p.reverb, "Hall"),
+        global,
+      },
+    },
+    meta: { original: 0, pbn: 0, premium: 0 },
+    schema: "L6Preset",
+    version: 5,
+  };
+}
+window.buildPreset = buildPreset;
+
+// Turns a .catl6p file (from Catalyst Edit, a friend, or this app) back into an editable sound.
+// Files can come from anyone, so every value is forced to a number (or boolean) in its allowed range.
+const num = (v, fallback) => (typeof v === "number" && Number.isFinite(v) ? v : fallback);
+const knobFrom = (v) => rawToKnob(num(v, 128));
+
+function slotSettings(slot, group) {
+  if (!slot || typeof slot !== "object" || !slot.graphSlot_EnabledState || !Object.hasOwn(M[group], slot["@asset"])) return undefined;
+  const model = M[group][slot["@asset"]];
+  const out = { type: slot["@asset"] };
+  for (const [sym, spec] of Object.entries(model.params)) {
+    if (sym === "graphSlot_EnabledState" || !(sym in slot)) continue;
+    const v = slot[sym];
+    if (typeof v === "boolean") out[sym] = v;
+    else if (spec.min === 0 && spec.max === 255) out[sym] = knobFrom(v);
+    else out[sym] = Math.round(clamp(num(v, spec.default), spec.min, spec.max));
+  }
+  return out;
+}
+
+function presetToSound(json, fileName) {
+  if (!json || json.schema !== "L6Preset" || !json.data || !json.data.tone || !json.data.tone.CatalystGroupAmp) {
+    throw new Error("not a Catalyst preset");
+  }
+  const t = json.data.tone, a = t.CatalystGroupAmp, g = t.CatalystGroupGate || {};
+  const metaName = json.data.meta && typeof json.data.meta.name === "string" ? json.data.meta.name.trim() : "";
+  const name = (metaName || fileName.replace(/\.\w+$/, "")).slice(0, MAX_NAME) || "Imported";
+  const mic = num(t.CatalystGroupDirectOut && t.CatalystGroupDirectOut.MicIndex, 0);
+  return {
+    name, cat: MINE, desc: `Imported from ${fileName}.`,
+    amp: Object.hasOwn(M.amps, a["@asset"]) ? a["@asset"] : "Clean",
+    gain: knobFrom(a.Gain), bass: knobFrom(a.Bass), mid: knobFrom(a.Mid),
+    treble: knobFrom(a.Treble), presence: knobFrom(a.Presence), volume: knobFrom(a.ChannelVolume),
+    boost: a.BoostEnable === true,
+    gate: g.graphSlot_EnabledState === true ? Math.max(0.1, knobFrom(g.Threshold)) : 0,
+    mic: Number.isInteger(mic) && mic >= 0 && mic < MIC_NAMES.length ? mic : 0,
+    fx: slotSettings(t.CatalystGroupEffect, "effects"),
+    reverb: slotSettings(t.CatalystGroupReverb, "reverbs"),
+  };
+}
+window.presetToSound = presetToSound;
+
+const safeName = (s) => s.replace(/[\\/:*?"<>|]/g, "-").trim() || "Preset";
+const presetText = (p, raw) => JSON.stringify(buildPreset(p, raw), null, 1);
+
+// ---------- downloads ----------
+function saveBlob(blob, filename) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(bytes) {
+  let c = 0xffffffff;
+  for (const b of bytes) c = CRC_TABLE[(c ^ b) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+// Minimal uncompressed ("stored") zip writer. Each file is { name, text } or { name, bytes }.
+function makeZip(files) {
+  const enc = new TextEncoder();
+  const now = new Date();
+  const dosTime = (now.getHours() << 11) | (now.getMinutes() << 5) | (now.getSeconds() >> 1);
+  const dosDate = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+  const chunks = [], central = [];
+  let offset = 0;
+  for (const f of files) {
+    const name = enc.encode(f.name), data = f.bytes || enc.encode(f.text), crc = crc32(data);
+    const local = new DataView(new ArrayBuffer(30));
+    local.setUint32(0, 0x04034b50, true); local.setUint16(4, 20, true); local.setUint16(6, 0x0800, true);
+    local.setUint16(8, 0, true); local.setUint16(10, dosTime, true); local.setUint16(12, dosDate, true);
+    local.setUint32(14, crc, true); local.setUint32(18, data.length, true); local.setUint32(22, data.length, true);
+    local.setUint16(26, name.length, true); local.setUint16(28, 0, true);
+    chunks.push(local, name, data);
+    const cd = new DataView(new ArrayBuffer(46));
+    cd.setUint32(0, 0x02014b50, true); cd.setUint16(4, 20, true); cd.setUint16(6, 20, true);
+    cd.setUint16(8, 0x0800, true); cd.setUint16(10, 0, true); cd.setUint16(12, dosTime, true);
+    cd.setUint16(14, dosDate, true); cd.setUint32(16, crc, true); cd.setUint32(20, data.length, true);
+    cd.setUint32(24, data.length, true); cd.setUint16(28, name.length, true);
+    cd.setUint32(42, offset, true);
+    central.push(cd, name);
+    offset += 30 + name.length + data.length;
+  }
+  const cdSize = central.reduce((s, c) => s + c.byteLength, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+  end.setUint32(12, cdSize, true); end.setUint32(16, offset, true);
+  return new Blob([...chunks, ...central, end], { type: "application/zip" });
+}
+window.makeZip = makeZip;
+
+function downloadOne(id) {
+  const p = current(id);
+  saveBlob(new Blob([presetText(p)], { type: "application/json" }), safeName(p.name) + ".catl6p");
+}
+
+function slotLabel(n) { return `${Math.floor(n / 2) + 1}${n % 2 ? "B" : "A"}`; }
+
+function downloadBank() {
+  const files = state.bank.map((id, n) => ({
+    name: `${slotLabel(n)} ${safeName(current(id).name)}.catl6p`,
+    text: presetText(current(id)),
+  }));
+  saveBlob(makeZip(files), "Catalyst Bank.zip");
+}
+
+function exportMine() {
+  const used = new Set();
+  const files = state.mine.map((p) => {
+    let name = safeName(p.name), n = 2;
+    while (used.has(name.toLowerCase())) name = `${safeName(p.name)} ${n++}`;
+    used.add(name.toLowerCase());
+    return { name: name + ".catl6p", text: presetText(p, true) };
+  });
+  saveBlob(makeZip(files), "My Catalyst Sounds.zip");
+}
+
+// ---------- helper.py: load straight into Catalyst Edit ----------
+let toastTimer;
+function toast(message, isError, ms) {
+  const t = $("toast");
+  t.textContent = message;
+  t.className = "toast show" + (isError ? " error" : "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = "toast"; }, ms || (isError ? 7000 : 3000));
+}
+
+function renderStatus() {
+  const s = $("status");
+  s.hidden = !state.helper;
+  s.className = "status " + (state.catalystOpen ? "on" : "off");
+  s.textContent = state.catalystOpen ? "Catalyst Edit connected" : "Open Catalyst Edit to load sounds";
+}
+
+async function checkHelper() {
+  if (!location.protocol.startsWith("http")) return;
+  try {
+    const r = await fetch("/api/status", { cache: "no-store" });
+    const s = await r.json();
+    const changed = !state.helper || state.catalystOpen !== s.catalystEdit;
+    state.helper = true;
+    state.catalystOpen = s.catalystEdit;
+    if (changed) { renderStatus(); renderGrid(); renderEditor(); }
+  } catch {
+    if (state.helper) { state.helper = false; renderStatus(); renderGrid(); renderEditor(); toast("Lost the helper. Is its window still open?", true); }
+  }
+}
+
+async function callHelper(url, body, busyText, okText, id) {
+  if (state.loading) { toast("Still busy with the last sound. One moment…"); return; }
+  state.loading = true;
+  renderGrid(); renderEditor();
+  toast(busyText, false, 30000);
+  try {
+    const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const res = await r.json();
+    if (res.ok) state.onAmp = id;
+    toast(res.ok ? okText(res) : res.message, !res.ok, res.ok ? 5000 : 10000);
+  } catch {
+    toast("Couldn't reach the helper. Is its window still open?", true);
+  } finally {
+    state.loading = false;
+    renderGrid(); renderEditor();
+    checkHelper();
+  }
+}
+
+function loadToAmp(id) {
+  const p = current(id);
+  callHelper("/api/load", buildPreset(p), `Loading "${p.name}"…`, () => `"${p.name}" is on your amp.`, id);
+}
+
+function saveToSlot(id) {
+  const p = current(id), slot = state.slot;
+  if (!confirm(`Save "${p.name}" into slot ${slot} on your amp?\n\nThis replaces the sound stored in ${slot}.`)) return;
+  callHelper("/api/save", { preset: buildPreset(p), bank: Number(slot[0]), channel: slot[1] },
+    `Saving "${p.name}" to slot ${slot}… (takes about 10 seconds, don't touch Catalyst Edit)`, (res) => res.message, id);
+}
+
+// ---------- rendering ----------
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const ampName = (id) => (M.amps[id] ? M.amps[id].name.charAt(0) + M.amps[id].name.slice(1).toLowerCase() : id) + (id.endsWith(" 2") ? " 2" : "");
+const fxName = (s, group) => (s && M[group][s.type] ? M[group][s.type].name : null);
+
+function matches(id, p) {
+  if (state.cat === FAV && !state.favs.includes(id)) return false;
+  if (state.cat === MINE && !isMine(id)) return false;
+  if (![ "All", FAV, MINE ].includes(state.cat) && p.cat !== state.cat) return false;
+  if (state.cat === SONGS && state.artist && p.artist !== state.artist) return false;
+  if (!state.query) return true;
+  const hay = searchText([p.name, p.cat, p.artist, ARTIST_ALSO[p.artist], p.song, p.desc, ampName(p.amp), fxName(p.fx, "effects"), fxName(p.reverb, "reverbs")].join(" "));
+  return searchText(state.query).split(/\s+/).filter(Boolean).every((w) => hay.includes(w));
+}
+
+// Lowercase, no accents or punctuation, so "acdc", "motley crue" and "guns n roses" find their sounds.
+const searchText = (s) => String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9\s]/g, "");
+
+function renderCats() {
+  const count = (c) => (c === FAV ? state.favs.length : c === MINE ? state.mine.length : null);
+  $("cats").innerHTML = CATS.map((c) => {
+    const n = count(c);
+    return `<button class="chip" aria-pressed="${c === state.cat}" data-cat="${esc(c)}">${esc(c)}${n ? ` <span class="count">${n}</span>` : ""}</button>`;
+  }).join(" ");
+  $("artists").hidden = state.cat !== SONGS;
+  $("artists").innerHTML = ["", ...ARTISTS].map((a) =>
+    `<button class="chip" aria-pressed="${a === state.artist}" data-artist="${esc(a)}">${esc(a || "All artists")}</button>`).join(" ");
+  $("exportmine").hidden = !state.mine.length;
+}
+
+function emptyMessage() {
+  if (state.query) return "No sounds match that search.";
+  if (state.cat === FAV) return "No favorites yet. Click the ☆ on any sound to add it here.";
+  if (state.cat === MINE) return "No sounds of your own yet. Tweak any sound and click “Save as my sound”, or drag .catl6p files or a friend's zip onto this page.";
+  return "No sounds here.";
+}
+
+function renderGrid() {
+  const cards = [];
+  for (const id of allIds()) {
+    const p = current(id);
+    if (!p || !matches(id, p)) continue;
+    const inBank = state.bank.includes(id), fav = state.favs.includes(id), qid = esc(id);
+    const fx = [fxName(p.fx, "effects"), fxName(p.reverb, "reverbs")].filter(Boolean).join(" + ") || "Dry";
+    cards.push(`
+      <article class="card ${state.selected === id ? "active" : ""}" data-id="${qid}" tabindex="0">
+        <div class="card-top"><h3>${esc(p.name)}</h3>
+          <span class="tag">${esc(isMine(id) ? "Mine" : p.artist || p.cat)}</span>
+          <button class="star" data-fav="${qid}" aria-pressed="${fav}" title="${fav ? "Remove from" : "Add to"} favorites">${fav ? "★" : "☆"}</button></div>
+        ${p.song ? `<p class="song">${esc(p.song)} · ${esc(p.artist || "")}</p>` : ""}
+        <p class="desc">${esc(p.desc || "")}</p>
+        <div class="knobrow">
+          <span>${esc(ampName(p.amp))}${p.boost ? " + boost" : ""}</span>
+          <span>G <b>${fmt(p.gain)}</b></span><span>B <b>${fmt(p.bass)}</b></span>
+          <span>M <b>${fmt(p.mid)}</b></span><span>T <b>${fmt(p.treble)}</b></span>
+        </div>
+        <div class="fxline">${esc(fx)}</div>
+        <div class="card-actions">
+          <span class="edited">${state.helper && state.onAmp === id ? "▶ on amp " : ""}${state.edits[id] ? "edited" : ""}</span>
+          <span class="btns">
+            <button class="btn ${inBank ? "inbank" : ""}" data-bank="${qid}">${inBank ? "In bank ✓" : "Add to bank"}</button>
+            ${state.helper ? `<button class="btn primary" data-load="${qid}" ${state.catalystOpen && !state.loading ? "" : "disabled"}>Load ▶</button>` : ""}
+          </span>
+        </div>
+      </article>`);
+  }
+  $("grid").innerHTML = cards.join("") || `<p class="empty">${emptyMessage()}</p>`;
+}
+
+function slider(key, label, value, step = 0.5) {
+  return `<div class="slider"><label for="s-${key}">${label}</label>
+    <input type="range" id="s-${key}" data-key="${key}" min="0" max="10" step="${step}" value="${value}">
+    <output id="o-${key}">${fmt(value)}</output></div>`;
+}
+
+function optionList(group, selected, withNone) {
+  const opts = withNone ? [`<option value="">Off</option>`] : [];
+  for (const [id, m] of Object.entries(M[group])) {
+    const kind = m.kind ? ` (${m.kind})` : "";
+    opts.push(`<option value="${esc(id)}" ${id === selected ? "selected" : ""}>${esc(m.name)}${kind}</option>`);
+  }
+  return opts.join("");
+}
+
+function decayKey(rev) {
+  if (!rev || !M.reverbs[rev.type]) return null;
+  return "Decay" in M.reverbs[rev.type].params ? "Decay" : "Dwell" in M.reverbs[rev.type].params ? "Dwell" : null;
+}
+
+function renderEditor() {
+  const id = state.selected;
+  const p = id === null ? null : current(id);
+  if (!p) { $("editor").innerHTML = `<p class="empty">Click a sound to see its settings and tweak it.</p>`; return; }
+  const k = adjustedKnobs(p);
+  const dk = decayKey(p.reverb);
+  const isDelay = p.fx && M.effects[p.fx.type] && M.effects[p.fx.type].kind === "delay";
+  const hasMix = hasFxMix(p);
+  const inBank = state.bank.includes(id), fav = state.favs.includes(id), qid = esc(id);
+  $("editor").innerHTML = `
+    <div class="card-top"><h2>${esc(p.name)}</h2>
+      <button class="star" data-fav="${qid}" aria-pressed="${fav}" title="${fav ? "Remove from" : "Add to"} favorites">${fav ? "★" : "☆"}</button></div>
+    ${p.song ? `<p class="song">${esc(p.song)} · ${esc(p.artist || "")}</p>` : ""}
+    <p class="desc">${esc(p.desc || "")}</p>
+    <h4>Quick fix</h4>
+    ${QUICK_FIXES.map(([group, fixes]) => `<div class="fixrow"><span>${group}</span><div>${fixes.map(([key, label, deltas]) =>
+      `<button class="chip" data-fix="${key}" title="${esc(fixTitle(deltas))}">${label}</button>`).join("")}</div></div>`).join("")}
+    ${state.helper ? `<label class="note"><input type="checkbox" id="e-autosend" ${state.autosend ? "checked" : ""}> Send each fix to the amp</label>` : ""}
+    ${state.lastFix && state.lastFix.id === id ? `<p class="fixnote"><span>${esc(state.lastFix.text)}</span>
+      ${state.undo.some((u) => u.id === id) ? `<button class="btn" id="e-undo">Undo</button>` : ""}</p>` : ""}
+    <h4>Name on the amp</h4>
+    <input type="text" id="e-name" maxlength="${MAX_NAME}" value="${esc(p.name)}" style="width:100%">
+    <h4>Amp</h4>
+    <div class="row"><select id="e-amp">${optionList("amps", p.amp)}</select>
+      <label><input type="checkbox" id="e-boost" ${p.boost ? "checked" : ""}> Boost</label></div>
+    ${AMP_KNOBS.map(([key, label]) => slider(key, label, p[key] ?? 5)).join("")}
+    ${slider("gate", "Noise gate", p.gate || 0)}
+    <h4>Effect</h4>
+    <div class="row"><select id="e-fx">${optionList("effects", p.fx && p.fx.type, true)}</select></div>
+    ${hasMix ? slider("fxmix", "Mix", p.fx.mix ?? p.fx.graphSlot_WetDryState ?? 5) : ""}
+    ${isDelay ? `<div class="slider"><label for="s-fxtime">Time</label>
+      <input type="range" id="s-fxtime" data-key="fxtime" min="50" max="1500" step="5" value="${p.fx.time ?? p.fx.graphSlotAsset_ManualTime ?? 400}">
+      <output id="o-fxtime">${p.fx.time ?? p.fx.graphSlotAsset_ManualTime ?? 400}ms</output></div>`
+      + slider("fxfb", "Repeats", p.fx.fb ?? p.fx.Feedback ?? 3) : ""}
+    <h4>Reverb</h4>
+    <div class="row"><select id="e-rev">${optionList("reverbs", p.reverb && p.reverb.type, true)}</select></div>
+    ${p.reverb ? slider("revmix", "Mix", p.reverb.mix ?? p.reverb.graphSlot_WetDryState ?? 3) : ""}
+    ${dk ? slider("revdecay", dk === "Dwell" ? "Dwell" : "Decay", p.reverb[dk] ?? 5) : ""}
+    <h4>Cab mic (USB / headphones)</h4>
+    <div class="row"><select id="e-mic">${MIC_NAMES.map((n, m) => `<option value="${m}" ${m === (p.mic || 0) ? "selected" : ""}>${n}</option>`).join("")}</select></div>
+    <div class="hand"><b>Dial it in by hand:</b> ${esc(ampName(p.amp))}${p.boost ? ", boost on" : ""} —
+      <span id="handknobs">${handText(k)}</span>
+      ${state.pickups !== "neutral" ? `<br><span class="note">Includes the ${state.pickups === "single" ? "single-coil" : "humbucker"} pickup adjustment.</span>` : ""}
+      ${Number(state.level) ? `<br><span class="note">Includes your overall level (${state.level > 0 ? "+" : ""}${state.level}).</span>` : ""}</div>
+    ${state.helper ? `<h4>On your amp</h4>
+    <div class="row">
+      <button class="btn primary" data-load="${qid}" ${state.catalystOpen && !state.loading ? "" : "disabled"}>Load to amp ▶</button>
+      <span class="note">to try it</span>
+    </div>
+    <div class="row">
+      <button class="btn" id="e-saveslot" ${state.catalystOpen && !state.loading ? "" : "disabled"}>Save to slot</button>
+      <select id="e-slot" aria-label="Amp slot">${SLOTS.map((s) => `<option ${s === state.slot ? "selected" : ""}>${s}</option>`).join("")}</select>
+      <span class="note">to keep it on the amp</span>
+    </div>` : ""}
+    <div class="actions">
+      <button class="btn ${state.helper ? "" : "primary"}" id="e-download">Download .catl6p</button>
+      <button class="btn ${inBank ? "inbank" : ""}" data-bank="${qid}">${inBank ? "In bank ✓" : "Add to bank"}</button>
+      <button class="btn" id="e-savemine">${isMine(id) ? "Duplicate" : "Save as my sound"}</button>
+      ${state.edits[id] ? `<button class="btn" id="e-reset">Reset to original</button>` : ""}
+      ${isMine(id) ? `<button class="btn" id="e-delete">Delete</button>` : ""}
+    </div>
+    ${isMine(id) ? "" : `<p class="note">Tweaks to built-in sounds are kept. “Save as my sound” makes a separate copy under My sounds.</p>`}`;
+}
+
+function handText(k) {
+  return `Gain ${fmt(k.gain)}, Bass ${fmt(k.bass)}, Mid ${fmt(k.mid)}, Treble ${fmt(k.treble)}, Presence ${fmt(k.presence)}, Volume ${fmt(k.volume)}`;
+}
+
+function renderBank() {
+  state.bank = state.bank.filter((id) => current(id));
+  $("bankcount").textContent = `Bank: ${state.bank.length} / ${BANK_SIZE}`;
+  $("slots").innerHTML = state.bank.length
+    ? state.bank.map((id, n) => `<span class="slot"><b>${slotLabel(n)}</b>${esc(current(id).name)}</span>`).join("")
+    : `<span class="note">Add up to 12 sounds (6 banks × 2 channels) and download them together.</span>`;
+  $("downloadbank").disabled = !state.bank.length;
+}
+
+function renderAll() { renderStatus(); renderCats(); renderGrid(); renderEditor(); renderBank(); }
+
+// ---------- editing ----------
+function edit(mutator) {
+  const id = state.selected;
+  if (isMine(id)) {
+    mutator(findMine(id));
+    save("mine", state.mine);
+  } else {
+    const p = clone(current(id));
+    mutator(p);
+    state.edits[id] = p;
+    save("edits", state.edits);
+  }
+  renderGrid(); renderBank();
+}
+
+// ---------- quick fixes ----------
+const hasFxMix = (p) => Boolean(p.fx && M.effects[p.fx.type] && "graphSlot_WetDryState" in M.effects[p.fx.type].params);
+
+// Current value of a quick-fix knob, or undefined when the sound doesn't have it (no reverb, no effect mix).
+function fixKnob(p, key) {
+  if (key === "revmix") return p.reverb ? p.reverb.mix ?? p.reverb.graphSlot_WetDryState ?? 3 : undefined;
+  if (key === "fxmix") return hasFxMix(p) ? p.fx.mix ?? p.fx.graphSlot_WetDryState ?? 5 : undefined;
+  return p[key] ?? (key === "gate" ? 0 : 5);
+}
+function setFixKnob(p, key, v) {
+  if (key === "revmix") { p.reverb.mix = v; delete p.reverb.graphSlot_WetDryState; }
+  else if (key === "fxmix") { p.fx.mix = v; delete p.fx.graphSlot_WetDryState; }
+  else p[key] = v;
+}
+const fixTitle = (deltas) => Object.entries(deltas).map(([k, d]) => `${FIX_KNOB_NAMES[k]} ${d > 0 ? "+" : "−"}${Math.abs(d)}`).join(", ");
+
+// Replaces the selected sound's settings, keeping built-in sounds' originals untouched (they live in state.edits).
+function replaceSound(id, sound) {
+  if (isMine(id)) {
+    const p = findMine(id);
+    for (const k of Object.keys(p)) delete p[k];
+    Object.assign(p, clone(sound), { id });
+    save("mine", state.mine);
+  } else {
+    if (sound) state.edits[id] = clone(sound); else delete state.edits[id];
+    save("edits", state.edits);
+  }
+}
+
+function quickFix(key) {
+  const id = state.selected, fix = FIX_BY_KEY[key];
+  const before = clone(current(id)), after = clone(before), changes = [];
+  for (const [k, d] of Object.entries(fix.deltas)) {
+    const v = fixKnob(after, k);
+    if (v === undefined) continue;
+    // A gate that's off jumps straight to a useful setting.
+    const next = clamp(Math.round((k === "gate" && !v ? 2 : v + d) * 10) / 10, 0, 10);
+    if (next === v) continue;
+    setFixKnob(after, k, next);
+    changes.push(`${FIX_KNOB_NAMES[k]} ${fmt(v)} → ${fmt(next)}`);
+  }
+  if (key === "space" && !after.reverb) {
+    after.reverb = { type: "Chamber", mix: 2 };
+    changes.push("added Chamber reverb");
+  }
+  if (!changes.length) {
+    toast(`"${fix.label}": those knobs are already as far as they go. Try another fix.`);
+    return;
+  }
+  state.undo.push({ id, before: isMine(id) || state.edits[id] ? before : null });
+  replaceSound(id, after);
+  state.lastFix = { id, text: `${fix.label}: ${changes.join(", ")}` };
+  renderGrid(); renderEditor(); renderBank();
+  sendAfterFix(id);
+}
+
+function undoFix() {
+  const id = state.selected;
+  const at = state.undo.map((u) => u.id).lastIndexOf(id);
+  if (at < 0) return;
+  const [u] = state.undo.splice(at, 1);
+  replaceSound(id, u.before);
+  state.lastFix = { id, text: "Undid the last fix." };
+  renderAll();
+  sendAfterFix(id);
+}
+
+// Waits a moment so a few quick clicks send one load, and waits for a load that's still running.
+let fixTimer;
+function sendAfterFix(id) {
+  if (!state.helper || !state.catalystOpen || !state.autosend) return;
+  clearTimeout(fixTimer);
+  fixTimer = setTimeout(function send() {
+    if (state.loading) { fixTimer = setTimeout(send, 500); return; }
+    if (current(id)) loadToAmp(id);
+  }, 700);
+}
+
+function toggleBank(id) {
+  const at = state.bank.indexOf(id);
+  if (at >= 0) state.bank.splice(at, 1);
+  else if (state.bank.length < BANK_SIZE) state.bank.push(id);
+  else { toast("The Catalyst holds 12 presets. Remove one from the bank first.", true); return; }
+  save("bank", state.bank);
+  renderGrid(); renderEditor(); renderBank();
+}
+
+function toggleFav(id) {
+  const at = state.favs.indexOf(id);
+  if (at >= 0) state.favs.splice(at, 1); else state.favs.push(id);
+  save("favs", state.favs);
+  renderCats(); renderGrid(); renderEditor();
+}
+
+const newMineId = () => "my:" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+function addMine(sound) {
+  const p = { ...clone(sound), id: newMineId(), cat: MINE };
+  state.mine.unshift(p);
+  save("mine", state.mine);
+  return p.id;
+}
+
+function saveAsMine() {
+  const src = current(state.selected), copy = isMine(state.selected);
+  const id = addMine(copy ? src : { ...src, desc: `My version of ${src.name}. ${src.desc || ""}`.trim() });
+  state.selected = id;
+  renderAll();
+  toast(copy ? `Made a copy of "${src.name}". Rename it at the top of the panel.` : `Saved "${src.name}" to My sounds.`);
+}
+
+function deleteMine() {
+  const p = findMine(state.selected);
+  if (!p || !confirm(`Delete "${p.name}" from My sounds?`)) return;
+  state.mine = state.mine.filter((x) => x.id !== p.id);
+  state.favs = state.favs.filter((x) => x !== p.id);
+  state.bank = state.bank.filter((x) => x !== p.id);
+  save("mine", state.mine); save("favs", state.favs); save("bank", state.bank);
+  state.selected = null;
+  renderAll();
+}
+
+// Reads a zip (stored or deflated, as made by this app, Windows or most zip tools) into
+// [{ name, size, text() }]. Only what's needed to pull .catl6p files back out.
+function unzip(buf) {
+  const dv = new DataView(buf), dec = new TextDecoder();
+  let end = -1;
+  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 65557); i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { end = i; break; }
+  }
+  if (end < 0) throw new Error("not a zip");
+  const entries = [];
+  for (let n = 0, at = dv.getUint32(end + 16, true); n < dv.getUint16(end + 10, true); n++) {
+    if (dv.getUint32(at, true) !== 0x02014b50) throw new Error("damaged zip");
+    const method = dv.getUint16(at + 10, true), packed = dv.getUint32(at + 20, true), size = dv.getUint32(at + 24, true);
+    const nameLen = dv.getUint16(at + 28, true), local = dv.getUint32(at + 42, true);
+    const name = dec.decode(new Uint8Array(buf, at + 46, nameLen));
+    at += 46 + nameLen + dv.getUint16(at + 30, true) + dv.getUint16(at + 32, true);
+    const start = local + 30 + dv.getUint16(local + 26, true) + dv.getUint16(local + 28, true);
+    const data = new Uint8Array(buf, start, packed);
+    entries.push({
+      name, size,
+      text: async () => {
+        if (method === 0) return dec.decode(data);
+        if (method !== 8) throw new Error("unsupported compression");
+        return new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).text();
+      },
+    });
+  }
+  return entries;
+}
+
+// True when a sound with the same name and settings is already in the library or My sounds,
+// so importing a friend's zip (or the same file twice) doesn't pile up copies.
+function sameTone(a, b) {
+  for (const [g, slot] of Object.entries(a)) {
+    for (const [k, v] of Object.entries(slot)) {
+      const w = b[g] && b[g][k];
+      if (typeof v === "number" ? !(typeof w === "number" && Math.abs(v - w) <= 1) : v !== w) return false;
+    }
+  }
+  return true;
+}
+function alreadyHave(sound) {
+  const tone = buildPreset(sound, true).data.tone, name = sound.name.toLowerCase();
+  return [...LIB, ...allIds().map(current)].some((p) => p.name.toLowerCase() === name && sameTone(tone, buildPreset(p, true).data.tone));
+}
+
+const baseName = (path) => path.split(/[\\/]/).pop();
+
+async function importFiles(files) {
+  const found = [], failed = [];
+  for (const f of files) {
+    if (/\.zip$/i.test(f.name)) {
+      try {
+        if (f.size > 20e6) throw new Error("too big");
+        found.push(...unzip(await f.arrayBuffer()).filter((e) => /\.(catl6p|json)$/i.test(e.name)).slice(0, 500));
+      } catch { failed.push(f.name); }
+    } else found.push({ name: f.name, size: f.size, text: () => f.text() });
+  }
+  let added = 0, skipped = 0;
+  for (const f of found) {
+    const name = baseName(f.name);
+    try {
+      if (f.size > 200000) throw new Error("too big");
+      const sound = presetToSound(JSON.parse(await f.text()), name);
+      if (alreadyHave(sound)) { skipped++; continue; }
+      addMine(sound);
+      added++;
+    } catch {
+      failed.push(name);
+    }
+  }
+  if (added) state.cat = MINE;
+  renderAll();
+  const parts = [];
+  if (!found.length && !failed.length) parts.push("No Catalyst presets (.catl6p) in that zip.");
+  if (added) parts.push(`Imported ${added} sound${added === 1 ? "" : "s"} into My sounds.`);
+  if (skipped) parts.push(`Skipped ${skipped} you already have.`);
+  if (failed.length) parts.push(`Couldn't read: ${failed.slice(0, 5).join(", ")}${failed.length > 5 ? ` and ${failed.length - 5} more` : ""}.`);
+  toast(parts.join(" "), failed.length > 0 || !found.length);
+}
+
+const selectCard = (id) => { state.selected = id; renderGrid(); renderEditor(); };
+
+document.addEventListener("click", (e) => {
+  const loadBtn = e.target.closest("[data-load]");
+  if (loadBtn) { e.stopPropagation(); loadToAmp(loadBtn.dataset.load); return; }
+  const favBtn = e.target.closest("[data-fav]");
+  if (favBtn) { e.stopPropagation(); toggleFav(favBtn.dataset.fav); return; }
+  const bankBtn = e.target.closest("[data-bank]");
+  if (bankBtn) { e.stopPropagation(); toggleBank(bankBtn.dataset.bank); return; }
+  const cat = e.target.closest("[data-cat]");
+  if (cat) { state.cat = cat.dataset.cat; renderCats(); renderGrid(); return; }
+  const artist = e.target.closest("[data-artist]");
+  if (artist) { state.artist = artist.dataset.artist; renderCats(); renderGrid(); return; }
+  const fixBtn = e.target.closest("[data-fix]");
+  if (fixBtn) { quickFix(fixBtn.dataset.fix); return; }
+  const card = e.target.closest(".card[data-id]");
+  if (card) { selectCard(card.dataset.id); return; }
+  if (e.target.id === "e-undo") undoFix();
+  if (e.target.id === "e-download") downloadOne(state.selected);
+  if (e.target.id === "e-saveslot") saveToSlot(state.selected);
+  if (e.target.id === "e-savemine") saveAsMine();
+  if (e.target.id === "e-delete") deleteMine();
+  if (e.target.id === "e-reset") {
+    const id = state.selected;
+    delete state.edits[id]; save("edits", state.edits);
+    state.undo = state.undo.filter((u) => u.id !== id);
+    state.lastFix = null;
+    renderAll();
+    if (state.onAmp === id) sendAfterFix(id);
+  }
+});
+
+document.addEventListener("keydown", (e) => {
+  const card = e.target.closest && e.target.closest(".card[data-id]");
+  if (card && (e.key === "Enter" || e.key === " ") && e.target === card) { e.preventDefault(); selectCard(card.dataset.id); }
+});
+
+document.addEventListener("input", (e) => {
+  const t = e.target;
+  if (t.id === "search") { state.query = t.value.trim(); renderGrid(); return; }
+  if (t.id === "e-name") { edit((p) => { p.name = t.value || "Untitled"; }); return; }
+  if (t.type !== "range") return;
+  const key = t.dataset.key, v = Number(t.value);
+  $("o-" + key).textContent = key === "fxtime" ? v + "ms" : fmt(v);
+  edit((p) => {
+    if (key === "fxmix") { p.fx.mix = v; delete p.fx.graphSlot_WetDryState; }
+    else if (key === "fxtime") { p.fx.time = v; delete p.fx.graphSlotAsset_ManualTime; }
+    else if (key === "fxfb") { p.fx.fb = v; delete p.fx.Feedback; }
+    else if (key === "revmix") { p.reverb.mix = v; delete p.reverb.graphSlot_WetDryState; }
+    else if (key === "revdecay") p.reverb[decayKey(p.reverb)] = v;
+    else p[key] = v;
+  });
+  if (AMP_KNOBS.some(([k]) => k === key) && $("handknobs")) $("handknobs").textContent = handText(adjustedKnobs(current(state.selected)));
+});
+
+document.addEventListener("change", (e) => {
+  const t = e.target;
+  if (t.id === "device") { state.device = t.value; save("device", t.value); return; }
+  if (t.id === "pickups") { state.pickups = t.value; save("pickups", t.value); renderEditor(); return; }
+  if (t.id === "level") { state.level = Number(t.value); save("level", state.level); renderEditor(); return; }
+  if (t.id === "importfile") { if (t.files.length) importFiles([...t.files]); t.value = ""; return; }
+  if (t.id === "e-slot") { state.slot = t.value; save("slot", t.value); return; }
+  if (t.id === "e-autosend") { state.autosend = t.checked; save("autosend", t.checked); return; }
+  if (t.id === "e-amp") edit((p) => { p.amp = t.value; });
+  else if (t.id === "e-boost") edit((p) => { p.boost = t.checked; });
+  else if (t.id === "e-mic") edit((p) => { p.mic = Number(t.value); });
+  else if (t.id === "e-fx") edit((p) => {
+    if (!t.value) { delete p.fx; return; }
+    const kind = M.effects[t.value].kind;
+    p.fx = kind === "delay" ? { type: t.value, time: 400, fb: 3, mix: 3 } : { type: t.value, mix: 5 };
+  });
+  else if (t.id === "e-rev") edit((p) => {
+    if (!t.value) { delete p.reverb; return; }
+    p.reverb = { type: t.value, mix: 3 };
+  });
+  else return;
+  renderEditor();
+});
+
+// Drag .catl6p files or zips anywhere onto the page to import them.
+let dragDepth = 0;
+const hasFiles = (e) => e.dataTransfer && [...e.dataTransfer.types].includes("Files");
+document.addEventListener("dragenter", (e) => { if (hasFiles(e)) { dragDepth++; $("dropzone").hidden = false; } });
+document.addEventListener("dragleave", (e) => { if (hasFiles(e) && --dragDepth <= 0) { dragDepth = 0; $("dropzone").hidden = true; } });
+document.addEventListener("dragover", (e) => { if (hasFiles(e)) e.preventDefault(); });
+document.addEventListener("drop", (e) => {
+  if (!hasFiles(e)) return;
+  e.preventDefault();
+  dragDepth = 0;
+  $("dropzone").hidden = true;
+  if (e.dataTransfer.files.length) importFiles([...e.dataTransfer.files]);
+});
+
+$("clearbank").addEventListener("click", () => { state.bank = []; save("bank", []); renderGrid(); renderEditor(); renderBank(); });
+$("downloadbank").addEventListener("click", downloadBank);
+$("importbtn").addEventListener("click", () => $("importfile").click());
+$("exportmine").addEventListener("click", exportMine);
+$("device").value = state.device;
+$("pickups").value = state.pickups;
+$("level").value = String(state.level);
+save("edits", state.edits); save("bank", state.bank);
+renderAll();
+checkHelper();
+setInterval(checkHelper, 3000);
+</script>
+</body>
+</html>

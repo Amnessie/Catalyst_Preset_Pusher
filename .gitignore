@@ -1,0 +1,8 @@
+# Python cache
+__pycache__/
+
+# Temporary files the helper writes each time a sound is loaded to the amp
+Loaded presets/
+
+# Built share zip (attach it to a GitHub Release instead)
+dist/
